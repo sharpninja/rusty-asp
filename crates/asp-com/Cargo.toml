@@ -1,0 +1,13 @@
+[package]
+name = "rusty-asp"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+taskboard = { path = "../taskboard" }
+windows.workspace = true
+windows-core = "=0.62.2"
+uuid.workspace = true

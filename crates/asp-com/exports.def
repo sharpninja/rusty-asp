@@ -1,0 +1,4 @@
+LIBRARY rusty_asp
+EXPORTS
+    DllGetClassObject PRIVATE
+    DllCanUnloadNow PRIVATE
