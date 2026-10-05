@@ -64,7 +64,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Build.ps1 -Tes
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Verify.ps1
 ```
 
-The HTTP suite starts IIS Express on port 8088 with a separate generated database, exercises form submissions and object properties, restarts IIS to check durability, and stops its server on exit. Test databases are retained under `.runtime` for inspection. It does not modify the normal task database. The Windows GitHub Actions workflow builds and tests Rust; the IIS Express integration suite is a separate local check.
+The HTTP suite starts IIS Express on port 8088 with a separate generated database, exercises form submissions and object properties, restarts IIS to check durability, and stops its server on exit. Test databases are retained under `.runtime` for inspection. It does not modify the normal task database. Build and verification run locally on Windows using the commands above.
 
 SQLite uses WAL and a five-second busy timeout. ASP encodes task content, accepts writes only through POST, checks a random token tied to the ASP session, and rejects malformed task IDs. Rust validates titles independently of browser limits. The sample limits titles to 200 Unicode scalar values; a browser may count non-BMP characters differently in its input `maxlength` rule.
 

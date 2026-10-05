@@ -13,4 +13,4 @@ The HTTP checks covered page execution, Rust-generated session tokens, distinct 
 
 Local verification used http://localhost:8087/ with its normal database in `data/tasks.sqlite`. The integration suite used port 8088 and separate generated databases under `.runtime`. Existing IIS sites and web-root contents were not changed. Public source hosting is separate from hosting the ASP application.
 
-Not validated: full IIS service-account deployment, public hosting, multi-user authorization, load/concurrency limits, comparative performance, non-Windows hosts, and CI execution on GitHub. The included GitHub Actions workflow has been authored but has not been run remotely.
+Not validated: full IIS service-account deployment, public hosting, multi-user authorization, load/concurrency limits, comparative performance, and non-Windows hosts. Build and verification use the local Windows scripts documented in README.md.
