@@ -1,4 +1,5 @@
-. "$PSScriptRoot\Common.ps1"
-$process = Get-RunningSite
-if ($process) { Stop-Process -Id $process.Id; $process.WaitForExit(); Write-Output 'Stopped this project IIS Express process.' }
-else { Write-Output 'This project server is not running.' }
+# Compatibility entry point. Use Import-Module .\scripts\RustyAsp.psd1 for interactive use.
+[CmdletBinding()]
+param()
+Import-Module (Join-Path $PSScriptRoot 'RustyAsp.psd1') -ErrorAction Stop
+Stop-RustyAsp @PSBoundParameters

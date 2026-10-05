@@ -40,7 +40,7 @@ For i = 0 To tasks.Count - 1
 2. Add your object kind to the adapter's `Value` enum, its member-name mapping, and its checked `call` dispatch. Keep existing dispatch IDs stable when preserving compatibility.
 3. Return `IDispatch` wrapped in a VARIANT for nested objects, BSTR for strings, and Automation-compatible scalars for data. Maintain ownership through windows-rs; do not return pointers to temporary Rust strings.
 4. Add the ASP template. Encode untrusted content at output and preserve POST/session-token checks for mutations.
-5. Replace the CLSID, ProgID, documentation, and registration script constants for a separately installed app.
+5. Replace the CLSID, ProgID, documentation, and constants in `scripts/RustyAsp.psm1` for a separately installed app.
 6. Run Rust checks and the actual ASP HTTP suite; native unit tests alone cannot prove script-host compatibility.
 
 The sample opens a SQLite connection per domain operation, avoiding shared mutable connection state across COM apartments. It uses parameterized statements and database transactions for each single-statement mutation. Multi-step business operations should use an explicit transaction inside the domain crate.

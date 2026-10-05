@@ -29,6 +29,8 @@ For i = 0 To tasks.Count - 1
 
 There is no JSON API between ASP and Rust in this example. There is a native DLL in the IIS Express process. The browser gets HTML and CSS; the app ships no browser JavaScript.
 
+That does not mean the site has to look like 2001. The interface uses semantic HTML5 and locally bundled Bootstrap 5.3.8, with a responsive dark theme, a task-completion ring, and ordinary server-rendered forms. The architecture page links to the restored public examples from the original article.
+
 ## The part that took more than angle brackets
 
 Implementing a COM object for a scripting host means implementing the scripting contract. The DLL exposes a class factory, resolves member names to dispatch IDs, validates arguments, and translates values into Automation types. COM's positional arguments arrive in reverse order, so the adapter puts them back into application order. Rust strings become BSTRs, and nested data objects become IDispatch values.
@@ -42,12 +44,13 @@ The ASP layer handles forms and sessions. Every write uses POST and a random tok
 On Windows x64 with Rust, the Visual Studio C++ build tools, and IIS Express installed, open the project folder and run:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start.ps1
+Import-Module .\scripts\RustyAsp.psd1
+Start-RustyAsp
 ```
 
-Then visit `http://localhost:8087/`. The script builds the DLL, registers this component for your Windows user, and launches a dedicated IIS Express site. SQLite data is stored outside the web root.
+Then visit `http://localhost:8087/`. The command builds the DLL, registers this component for your Windows user, and launches a dedicated IIS Express site. SQLite data is stored outside the web root.
 
-The repository includes start, stop, registration-removal, build, and integration-test scripts. The integration suite exercises the real ASP page and restarts IIS Express to verify that the task survives. It also checks that forged form tokens are rejected and stored HTML is encoded.
+The repository includes a PowerShell module with eight commands for build, registration, start, stop, sample data, status, and integration testing. The original script entry points remain as compatibility wrappers. The integration suite exercises the real ASP page and restarts IIS Express to verify that the task survives. It also checks that forged form tokens are rejected and stored HTML is encoded.
 
 ## What I can claim now
 

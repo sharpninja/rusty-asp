@@ -2,7 +2,7 @@
 
 A running Classic ASP application backed by a native Rust COM component and SQLite. This is a follow-up to [The Sharp Ninja's 2021 article](https://medium.com/the-unpopular-opinions-of-a-senior-developer/microsoft-officially-supports-rust-powered-web-framework-d39271cc55f6): a demo, a useful persistent task board, and a reusable starter in one project.
 
-The request path is **browser → IIS Express → ASP/VBScript → Rust through COM Automation → SQLite**. Rust returns task objects; the ASP template reads their properties and HTML-encodes their values. The browser receives HTML and CSS, with no JavaScript bundle.
+The request path is **browser → IIS Express → ASP/VBScript → Rust through COM Automation → SQLite**. Rust returns task objects; the ASP template reads their properties and HTML-encodes their values. The browser receives semantic HTML5 and locally bundled Bootstrap 5.3.8 CSS, with a custom responsive dark theme and no JavaScript bundle.
 
 ## Run on Windows x64
 
@@ -11,32 +11,52 @@ Prerequisites: Rust stable with the `x86_64-pc-windows-msvc` toolchain, Visual S
 From the project folder:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start.ps1
+Import-Module .\scripts\RustyAsp.psd1
+Start-RustyAsp
 ```
 
-Open **http://localhost:8087/**. The command builds the Rust DLL, writes only this project's COM keys under `HKCU\Software\Classes`, generates a dedicated IIS Express configuration, and launches the local server. The execution-policy option applies only to that PowerShell process. An administrator session is not required for the intended development setup.
+Open **http://localhost:8087/**. The command builds the Rust DLL, writes only this project's COM keys under `HKCU\Software\Classes`, generates a dedicated IIS Express configuration, and launches the local server. An administrator session is not required for the intended development setup.
 
 After the first build, use `-SkipBuild` to start the existing DLL in `.runtime` directly. Rebuild source when moving to a different machine or changing code. Generated DLLs are excluded from the repository.
 
 Optional sample tasks, added only when the board is empty:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Seed.ps1
+Initialize-RustyAspData
 ```
 
 Manage the server:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Stop.ps1
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start.ps1 -Port 8087 -SkipBuild
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Unregister.ps1
+Stop-RustyAsp
+Start-RustyAsp -Port 8087 -SkipBuild
+Stop-RustyAsp
+Unregister-RustyAsp
+Get-RustyAspStatus
 ```
 
-Stop before rebuilding: IIS holds the component DLL until its process exits. `Stop.ps1` checks both process identity and start time before touching it. `Unregister.ps1` removes only this checkout's registration and preserves all files and task data. Only one checkout can own the sample's CLSID at a time; use a new GUID and ProgID for a second independent application.
+Stop before rebuilding: IIS holds the component DLL until its process exits. `Stop-RustyAsp` checks both process identity and start time before touching it. `Unregister-RustyAsp` removes only this checkout's registration and preserves all files and task data. Only one checkout can own the sample's CLSID at a time; use a new GUID and ProgID for a second independent application.
+
+## PowerShell commands
+
+All implementation lives in `scripts/RustyAsp.psm1`; importing the manifest exports only these eight commands and performs no registration or server startup. Run `Get-Help Start-RustyAsp -Examples` or `Get-Command -Module RustyAsp` after importing.
+
+| Command | Purpose |
+| --- | --- |
+| `Invoke-RustyAspBuild [-Test]` | Build the release DLL; optionally run Rust tests first |
+| `Register-RustyAsp` | Register the built component for the current user |
+| `Start-RustyAsp [-Port 8087] [-SkipBuild] [-DatabasePath ...]` | Build/register/start a dedicated local IIS Express process |
+| `Stop-RustyAsp` | Stop this checkout's recorded process after verifying its identity |
+| `Unregister-RustyAsp` | Remove only this checkout's registration |
+| `Initialize-RustyAspData [-Port 8087]` | Populate an empty board with three sample tasks |
+| `Test-RustyAsp [-Port 8088]` | Run HTTP integration checks using a separate retained database |
+| `Get-RustyAspStatus` | Return the process, URL, database, and project paths |
+
+The original `.ps1` entry points delegate to the module, so existing commands continue to work. If your local execution policy requires it, run a process-scoped shell with `powershell.exe -NoProfile -ExecutionPolicy Bypass`, then import the module there. The module remains tied to its checkout, whose source and runtime assets it manages.
 
 ## Use the board
 
-Add a title, edit it, mark a task complete, reopen it, or filter by status. Delete requires expanding the row's Delete control and clicking Confirm delete. Task data persists in `data/tasks.sqlite`, outside the served `site` directory. Override the path with `Start.ps1 -DatabasePath C:\absolute\path\tasks.sqlite`; the launcher creates its parent directory. The database path becomes `RUSTY_ASP_DATABASE` only in the server process environment.
+Add a title, edit it, mark a task complete, reopen it, or filter by status. Delete requires expanding the row's Delete control and clicking Confirm delete. Task data persists in `data/tasks.sqlite`, outside the served `site` directory. Override the path with `Start-RustyAsp -DatabasePath C:\absolute\path\tasks.sqlite`; the launcher creates its parent directory. The database path becomes `RUSTY_ASP_DATABASE` only in the server process environment.
 
 This is a local, single-board application with no user accounts. The supplied launcher uses localhost. Full IIS hosting under a service account requires matching x64 registration visible to that account, a writable database directory, Classic ASP configuration, authentication, TLS, and deployment-specific permissions. Do not assume the per-user IIS Express registration is a full IIS deployment procedure.
 
@@ -48,7 +68,9 @@ This is a local, single-board application with no user accounts. The supplied la
 | `crates/asp-com` | Class factory, `IDispatch`, argument conversion, Rust object properties |
 | `site/default.asp` | Requests, sessions, CSRF checks, forms, server-rendered HTML |
 | `site/about.asp` | A live explanation of the architecture |
-| `scripts` | Build, registration, start/stop, sample data, real HTTP verification |
+| `scripts/RustyAsp.psd1`, `scripts/RustyAsp.psm1` | PowerShell module for build, registration, start/stop, sample data, status, and HTTP verification |
+| `scripts/*.ps1` | Thin compatibility entry points to the module |
+| `site/vendor` | Pinned Bootstrap CSS and its MIT license |
 | `docs/EXTENDING.md` | COM contract and how to replace the example domain |
 | `docs/FOLLOW-UP.md` | Article draft grounded in the working implementation |
 | `docs/ORIGINAL-SNIPPETS.md` | Original gist IDs and archive/local recovery findings |
@@ -60,8 +82,9 @@ Stop the project server first, then run:
 ```powershell
 cargo fmt --all --check
 cargo clippy --locked --workspace --all-targets -- -D warnings
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Build.ps1 -Test
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Verify.ps1
+Import-Module .\scripts\RustyAsp.psd1
+Invoke-RustyAspBuild -Test
+Test-RustyAsp
 ```
 
 The HTTP suite starts IIS Express on port 8088 with a separate generated database, exercises form submissions and object properties, restarts IIS to check durability, and stops its server on exit. Test databases are retained under `.runtime` for inspection. It does not modify the normal task database. Build and verification run locally on Windows using the commands above.
